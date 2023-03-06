@@ -1,0 +1,2 @@
+# sqlmappy
+Lightweight SQLmap tool.
