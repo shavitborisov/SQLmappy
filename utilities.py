@@ -10,7 +10,7 @@ def log(func: any) -> any:
 
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        logging.debug("Executed " + func.__name__)
+        logging.info("Executed " + func.__name__)
         return result
 
     return wrapper

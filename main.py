@@ -1,7 +1,7 @@
 import logging
 import argparse
 
-from logic import scan_sql_injection
+from logic import SQLInjection
 
 
 if __name__ == "__main__":
@@ -18,7 +18,13 @@ if __name__ == "__main__":
 
     # Sets logging format based on the provided arugments
     logging.basicConfig(format='%(asctime)s: [%(levelname)s] %(message)s',
-                        level=logging.DEBUG if args.verbose else logging.WARNING)
-    logging.debug("Executed argparse utility and set logging config")
+                        level=logging.INFO if args.verbose else logging.WARNING)
+    logging.info("Executed argparse utility and set logging config")
 
-    scan_sql_injection(url=args.url)
+    # TODO: add parameters for injection types
+    # ___________________________________________
+    injection_types = ["error-based"]
+
+    attack_object = SQLInjection(injection_types=injection_types, url=args.url)
+    attack_object.attack()
+    print(attack_object)
