@@ -1,16 +1,10 @@
-import logging
+from enum import Enum
 
 
-def log(func: any) -> any:
+class Injection(Enum):
     """
-    Logging decorator to track executed function. Used for debugging.
-    @param func: The decorated function.
-    @return: Function func's result.
+    Simple Enum class to describe supported SQL injections.
     """
 
-    def wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        logging.info("Executed " + func.__name__)
-        return result
-
-    return wrapper
+    ERROR_BASED = 1,
+    BOOLEAN_BASED = 2
