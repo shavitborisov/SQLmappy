@@ -10,7 +10,7 @@ if __name__ == "__main__":
     """
 
     # Uses argparse to parse the arguments provided for the tool.
-    parser = argparse.ArgumentParser(prog='SQLmappy', description='Lightweight SQLmap tool', epilog='Happy pen-testing!')
+    parser = argparse.ArgumentParser(prog='SQLmappy', description='Lightweight SQLmap-like tool', epilog='Happy pen-testing!')
     parser.add_argument('-u', '--url', required=True, help='URL to pen-test on')
     parser.add_argument('-v', '--verbose', default=False, required=False, action='store_true', help='Verbose flag')
     parser.add_argument('-l', '--login-dvwa', default=False, required=False, action='store_true', help='login to DVWA server')
@@ -35,8 +35,6 @@ if __name__ == "__main__":
         manual=args.manual,
         export_path=args.export_csv
     )
-
-    # TODO: export csv
 
     # Performs attack on provided server.
     attack_object.attack()

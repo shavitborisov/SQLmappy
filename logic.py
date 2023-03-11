@@ -65,6 +65,9 @@ class SQLInjection:
         # Detects vulnerabilities for provided injection class, exploits them, and returns the results.
         self._data, self._used_payload = attacker.attack()
 
+        if self._export_path:
+            self._data.to_csv(self._export_path)
+
     def __str__(self) -> str:
         """
         String representation of SQLInjection object.

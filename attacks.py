@@ -273,18 +273,27 @@ class BooleanBasedAttack(Attack):
     Holds logic for boolean-based SQL injection.
     """
 
-    def __init__(self, session, base_url, is_manual):
+    def __init__(self, session: Session, base_url: str, is_manual: bool = False) -> None:
+        """
+        BooleanBasedAttack constructor. Uses the super() constructor and the relevant payloads.
+        @param session: The provided HTTP session.
+        @param base_url: The URL that is used.
+        @param is_manual: Is manual mode on.
+        @return: None.
+        """
+
         super().__init__(session, base_url, is_manual)
 
+        # Relevant payloads.
         boolean_based = PAYLOADS["attacks"]["boolean-based"]
         self.injections = boolean_based["injections"]
         self.blind_extractors = boolean_based["blind-extractors"]
 
+        # Status flags.
         self.detected_status_true = None
         self.detected_status_false = None
 
-        # When we detect a possible exploit query, we'll set self.exploit_query to it
-        # that other methods will use
+        # Used when a possible query is detected.
         self.exploit_query = None
 
     def iterate_injections(self):
